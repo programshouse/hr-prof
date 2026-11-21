@@ -1,0 +1,117 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDeleteHoliday } from '../hooks/useUpsertHoliday';
+import {
+  resolveHolidayTypeLabel,
+  resolveHolidayTypeValue,
+} from '@/lib/utils/employeeDisplayName';
+
+const DetailRow = ({ label, value }) => (
+  <div className="flex items-center justify-between gap-4 text-sm">
+    <span className="shrink-0 font-medium text-gray-700">{label}:</span>
+    <span className="text-gray-900">{value || '—'}</span>
+  </div>
+);
+
+export default function DeleteHolidayModal({ open, onOpenChange, holiday }) {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
+  const dir = isArabic ? 'rtl' : 'ltr';
+  const holidayTypeLabel = resolveHolidayTypeLabel(resolveHolidayTypeValue(holiday), t);
+
+  const queryClient = useQueryClient();
+  const { mutate: deleteHoliday, isPending } = useDeleteHoliday();
+
+  const handleDelete = () => {
+    const id = holiday?.id ?? holiday?.holiday_id ?? holiday?.holidayId ?? null;
+    if (!id || isPending) return;
+
+    deleteHoliday(id, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['total-holidays'] });
+        onOpenChange?.(false);
+      },
+    });
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (isPending) return;
+        onOpenChange?.(nextOpen);
+      }}
+    >
+      <DialogContent
+        dir={dir}
+        className={`
+          max-w-md
+          ${isArabic ? 'text-right [&>button]:left-4 [&>button]:right-auto' : 'text-left'}
+        `}
+      >
+        <DialogHeader className={isArabic ? 'items-end text-right' : 'items-start text-left'}>
+          <div className="flex w-full items-start gap-3">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100">
+              <AlertTriangle className="size-6 text-red-600" />
+            </div>
+
+            <div className={isArabic ? 'text-right' : 'text-left'}>
+              <DialogTitle className={isArabic ? 'text-right' : 'text-left'}>
+                {t('deleteModals.holiday.title')}
+              </DialogTitle>
+
+              <DialogDescription className={isArabic ? 'text-right' : 'text-left'}>
+                {t('deleteModals.description')}
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className={`space-y-3 py-4 ${isArabic ? 'text-right' : 'text-left'}`}>
+          <p className="text-sm text-gray-600">{t('deleteModals.holiday.confirmation')}</p>
+
+          {holiday && (
+            <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <DetailRow label={t('deleteModals.holiday.employee')} value={holiday.employeeName} />
+              <DetailRow label={t('deleteModals.holiday.type')} value={holidayTypeLabel} />
+              <DetailRow label={t('deleteModals.holiday.date')} value={holiday.date} />
+              <DetailRow label={t('deleteModals.holiday.from')} value={holiday.from} />
+              <DetailRow label={t('deleteModals.holiday.to')} value={holiday.to} />
+              <DetailRow label={t('deleteModals.holiday.status')} value={holiday.status} />
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className={isArabic ? 'justify-start' : 'justify-end'}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange?.(false)}
+            disabled={isPending}
+          >
+            {t('deleteModals.cancel')}
+          </Button>
+
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isPending || !holiday}
+          >
+            {isPending ? t('deleteModals.deleting') : t('deleteModals.title')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

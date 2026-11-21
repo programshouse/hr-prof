@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+
+    <script>
+      const savedLang = localStorage.getItem('i18nextLng') || 'en';
+      const isArabic = savedLang.startsWith('ar');
+
+      document.documentElement.lang = isArabic ? 'ar' : 'en';
+      document.documentElement.dir = isArabic ? 'rtl' : 'ltr';
+    </script>
+
+    <link rel="icon" type="image/svg+xml" href="/logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="200x200" href="/logo.png" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="HR Management System" />
+    <link rel="stylesheet" href="/src/styles/globals.css" />
+    <title>HR System</title>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/app/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,117 @@
+/* Header (SUN MON...) */
+.fc .fc-col-header-cell {
+  background: #f5f4ff;
+  border-color: #ececf3;
+}
+.fc .fc-col-header-cell-cushion {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4b5563;
+  padding: 10px 12px;
+}
+
+/* Grid */
+.fc .fc-daygrid-day {
+  border-color: #ececf3;
+}
+.fc .fc-daygrid-day-frame {
+  padding: 10px;
+  min-height: 86px;
+}
+
+/* Day number */
+.fc .fc-daygrid-day-number {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Remove the default dot */
+.fc-daygrid-event-dot {
+  display: none;
+}
+
+/* Event base style */
+.gh-event {
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  border-left: 4px solid;
+  margin-top: 6px;
+}
+
+/* Official = orange */
+.gh-official {
+  border-left-color: #fb923c;
+  background: #fff7ed;
+  color: #7c2d12;
+}
+
+/* Custom = purple */
+.gh-custom {
+  border-left-color: #a855f7;
+  background: #faf5ff;
+  color: #581c87;
+}
+
+/* "+ more" */
+.fc .fc-daygrid-more-link {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Force holiday text to be black */
+.fc .fc-daygrid-event .fc-event-title {
+  color: #000 !important;
+}
+/* Layout inside the event */
+.gh-event-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Keep title readable */
+.gh-event-title {
+  flex: 1;
+  min-width: 0;
+  color: #000 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Trash icon button */
+.gh-event-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 6px;
+  color: red;
+}
+
+.gh-event-delete:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #111827;
+}
+/* Scroll container */
+.gh-calendar-scroll {
+  overflow: hidden;
+}
+
+/* Mobile behavior: keep calendar readable */
+@media (max-width: 640px) {
+  .gh-calendar-scroll {
+    overflow-x: auto;     /* ✅ important: keep columns wide */
+    overflow-y: auto;     /* ✅ optional: if month is taller than screen */
+    max-height: 75vh;     /* optional vertical scroll */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Force a minimum calendar width so columns don't collapse */
+  .gh-calendar-minw {
+    min-width: 900px;     /* ✅ adjust: 800–1100 depending on your design */
+  }
+}

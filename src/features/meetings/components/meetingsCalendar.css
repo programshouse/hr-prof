@@ -1,0 +1,276 @@
+/* src/features/meetings/components/meetingsCalendar.css */
+
+/* =========================
+   FULLCALENDAR WEEK (timeGrid) - Badge Style
+   ========================= */
+
+/* Header row (Mon/Tue/...) */
+.fc .fc-col-header-cell {
+  background: #f5f4ff;
+  border-color: #ececf3;
+}
+.fc .fc-col-header-cell-cushion {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4b5563;
+  padding: 10px 12px;
+}
+
+/* Grid / borders */
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: #ececf3 !important;
+}
+.fc .fc-timegrid-slot {
+  border-color: #ececf3 !important;
+}
+.fc .fc-timegrid-slot-label {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+/* Remove default event styling */
+.fc .fc-timegrid-event {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+
+  /* ✅ IMPORTANT: allow content to show even if event is tiny */
+  overflow: visible !important;
+}
+.fc .fc-timegrid-event .fc-event-main {
+  padding: 0 !important;
+
+  /* ✅ IMPORTANT: avoid clipping */
+  overflow: visible !important;
+}
+
+/* Event spacing */
+.fc .fc-timegrid-event-harness {
+  margin: 0 6px;
+}
+
+/* =========================
+   Badge container
+   ========================= */
+.meet-badge {
+  position: relative;
+  height: 100%;
+  width: 100%;
+
+  /* ✅ was hidden -> causes top cut */
+  overflow: visible;
+
+  border-radius: 8px;
+
+  /* ✅ smaller padding so text fits in short events */
+  padding: 3px 8px;
+  padding-right: 22px; /* room for dots */
+
+  line-height: 1.1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+
+  white-space: normal;
+}
+
+/* Text */
+.meet-badge-time {
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 1px;
+  line-height: 1.1;
+}
+
+/* ✅ title shows (wrap / clamp) */
+.meet-badge-title {
+  font-size: 11px;
+  font-weight: 700;
+
+  white-space: normal !important;
+  overflow: hidden !important;
+
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important; /* ✅ keep safe for small events */
+  line-height: 1.15;
+}
+
+.meet-badge-participants {
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 500;
+}
+.meet-badge-employees {
+  margin-top: 2px;
+  font-size: 8px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.meet-badge-status {
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.meet-badge-sub {
+  margin-top: 2px;
+  font-size: 10px;
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Status colors */
+.meet-completed {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.meet-completed .meet-badge-time,
+.meet-completed .meet-badge-title,
+.meet-completed .meet-badge-sub {
+  color: #166534;
+}
+
+.meet-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.meet-pending .meet-badge-time,
+.meet-pending .meet-badge-title,
+.meet-pending .meet-badge-sub {
+  color: #92400e;
+}
+
+.meet-canceled,
+.meet-cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.meet-canceled .meet-badge-time,
+.meet-canceled .meet-badge-title,
+.meet-canceled .meet-badge-sub,
+.meet-cancelled .meet-badge-time,
+.meet-cancelled .meet-badge-title,
+.meet-cancelled .meet-badge-sub {
+  color: #991b1b;
+}
+
+.meet-scheduled {
+  background-color: #dbeafe;
+  color: #1e3a8a;
+}
+.meet-scheduled .meet-badge-time,
+.meet-scheduled .meet-badge-title,
+.meet-scheduled .meet-badge-sub {
+  color: #1e3a8a;
+}
+
+/* hover */
+.meet-badge:hover {
+  transform: translateY(-1px);
+  transition: transform 0.15s ease;
+}
+
+/* Today indicator */
+.fc .fc-timegrid-now-indicator-line,
+.fc .fc-timegrid-now-indicator-arrow {
+  color: #ef4444;
+  z-index: 10;
+}
+
+/* Scroll container */
+.meetings-calendar-scroll {
+  overflow: hidden;
+}
+
+/* kebab */
+.meet-kebab-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  color: #111827;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 1;
+  transition: background 0.15s ease;
+}
+.meet-kebab-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.meet-kebab-menu {
+  pointer-events: auto;
+}
+.meet-kebab-surface {
+  min-width: 120px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  padding: 2px;
+}
+.meet-kebab-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #374151;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.meet-kebab-item:hover {
+  background: #f3f4f6;
+}
+.meet-kebab-ico {
+  height: 18px;
+  width: 18px;
+  color: #6b7280;
+}
+.meet-kebab-sep {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 2px 4px;
+}
+.meet-kebab-danger {
+  color: #6b7280;
+}
+.meet-kebab-danger:hover {
+  background: #f3f4f6;
+}
+.meet-kebab-danger .meet-kebab-ico {
+  color: #6b7280;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .meetings-calendar-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 75vh;
+    -webkit-overflow-scrolling: touch;
+  }
+  .meetings-calendar-minw {
+    min-width: 900px;
+  }
+}
