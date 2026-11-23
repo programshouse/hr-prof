@@ -1061,6 +1061,8 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
   const dailyRate = parseMoneyValue(effectiveRates?.daily_rate);
   const hourlyRate = parseMoneyValue(effectiveRates?.hourly_rate);
 
+  const formatRate = (value) => parseMoneyValue(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   const topItems = [
     {
       label: t('salaries.salaryCalculationModal.items.basicSalary'),
@@ -1080,13 +1082,15 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
     },
     {
       label: t('salaries.salaryCalculationModal.items.dailyRate'),
-      value: effectiveRates?.daily_rate ?? dailyRate,
+      value: formatRate(effectiveRates?.daily_rate ?? dailyRate),
+      isText: true,
       color: 'text-slate-900',
       sectionKey: 'overview',
     },
     {
       label: t('salaries.salaryCalculationModal.items.hourlyRate'),
-      value: effectiveRates?.hourly_rate ?? hourlyRate,
+      value: formatRate(effectiveRates?.hourly_rate ?? hourlyRate),
+      isText: true,
       color: 'text-slate-900',
       sectionKey: 'overview',
     },
@@ -1094,18 +1098,8 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
 
   const additionItems = [
     {
-      label: t('salaries.salaryCalculationModal.items.kpi', {
-        defaultValue: 'KPI',
-      }),
-      value: kpi?.payout ?? data?.kpi_payout ?? header?.kpi_payout ?? kpiPayout,
-      color: 'text-emerald-600',
-      sectionKey: 'kpi',
-    },
-    {
-      label: t('salaries.salaryCalculationModal.items.kpiPercentage', {
-        defaultValue: 'KPI Percentage',
-      }),
-      value: kpiPercentageHuman,
+      label: t('salaries.salaryCalculationModal.items.kpi', { defaultValue: 'KPI' }),
+      value: `${kpiPercentageHuman} (${formatApiDisplayValue(kpi?.payout ?? data?.kpi_payout ?? header?.kpi_payout ?? kpiPayout)})`,
       color: 'text-emerald-600',
       isText: true,
       sectionKey: 'kpi',
@@ -1201,7 +1195,7 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
       sectionKey: 'allowances',
     },
     {
-      label: t('salaries.salaryCalculationModal.items.leaves'),
+      label: isArabic ? 'الإجازات السنوية' : 'Annual Leaves',
       value: absence_attendance?.Holidays?.used_days_in_month || 0,
       color: 'text-slate-900',
       unit: 'day',
@@ -1307,6 +1301,8 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
     },
   ];
 
+  const neutralItems = additionItems.filter((item) => !/text-(emerald|green|red)-/.test(item.color || ''));
+  const positiveItems = additionItems.filter((item) => /text-(emerald|green)-/.test(item.color || ''));
   const items = [...topItems, ...additionItems, ...deductionItems];
 
   const handleExport = (format) => {
@@ -1784,7 +1780,7 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
           role={clickable ? 'button' : undefined}
           tabIndex={clickable ? 0 : undefined}
           title={clickable ? `Go to ${item.label}` : undefined}
-          className={`flex min-h-[48px] items-center justify-between border-b border-slate-200 py-2 ${
+          className={`flex min-h-[37px] items-center justify-between border-b border-slate-200 py-1 ${
             clickable
               ? 'focus-visible:ring-primary/40 cursor-pointer rounded-md px-2 transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:outline-none'
               : ''
@@ -1868,15 +1864,28 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
       <div className="space-y-2 py-2">
         {renderEmployeeTypeSection()}
 
-        <div className="space-y-2">{topItems.map(renderSalaryItem)}</div>
+        <div className="grid grid-cols-2 gap-2 @[48rem]:grid-cols-4">
+          {topItems.map((item, idx) => (
+            <div key={`${item.label}-${idx}`} className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
+              <div className="text-sm font-semibold text-slate-500">{item.label}</div>
+              <div className="mt-1 break-words text-lg font-bold text-slate-900">{renderSalaryValue(item)}</div>
+            </div>
+          ))}
+        </div>
 
-        <div className="grid grid-cols-1 gap-4 @[36rem]:grid-cols-[1fr_auto_1fr]">
-          <div>{additionItems.map(renderSalaryItem)}</div>
+        <div className="grid grid-cols-1 gap-x-8 gap-y-2 @[36rem]:grid-cols-[1fr_auto_1fr]">
+          <div>{positiveItems.map(renderSalaryItem)}</div>
 
           <div className="hidden w-px bg-slate-300 @[36rem]:block" />
 
           <div>{deductionItems.map(renderSalaryItem)}</div>
         </div>
+
+        {neutralItems.length > 0 && (
+          <div className="mx-auto w-full max-w-5xl rounded-xl border border-slate-200 bg-slate-50 px-4 py-1 grid grid-cols-1 gap-x-8 @[48rem]:grid-cols-2">
+            {neutralItems.map(renderSalaryItem)}
+          </div>
+        )}
 
         {findSalarySection('overview') ? (
           <button
@@ -1928,8 +1937,8 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
         <DialogContent
           className={
             view === 'details'
-              ? 'max-h-[90vh] !w-[1100px] !max-w-[92vw] overflow-y-auto bg-slate-50'
-              : 'max-h-[90vh] !w-[800px] !max-w-[75vw] overflow-y-auto'
+              ? '!w-[1600px] !max-w-[98vw] max-h-[94dvh] overflow-y-auto bg-slate-50'
+              : '!w-[1750px] !max-w-[98vw] !max-h-none overflow-visible max-lg:!max-h-[94dvh] max-lg:overflow-y-auto'
           }
           dir={isArabic ? 'rtl' : 'ltr'}
         >
