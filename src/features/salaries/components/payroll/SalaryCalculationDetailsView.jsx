@@ -40,6 +40,10 @@ export default function SalaryCalculationDetailsView({
   }, [data?.attendance_rows, data?.attendance_details]);
 
   const approvedLeaves = data?.tables?.approved_leaves ?? [];
+  const approvedLeavesTotalHours =
+    data?.tables?.approved_leaves_total_hours ??
+    data?.approved_leaves_total_hours ??
+    0;
 
   const presentDays =
     absence?.attendance?.days ??
@@ -78,11 +82,11 @@ export default function SalaryCalculationDetailsView({
     absence?.total_working_days ??
     data?.total_working_days ??
     Number(presentDays) +
-      Number(absentDays) +
-      Number(sickDays) +
-      Number(annualLeaveDays) +
-      Number(unpaidLeaveDays) +
-      Number(holidayDays);
+    Number(absentDays) +
+    Number(sickDays) +
+    Number(annualLeaveDays) +
+    Number(unpaidLeaveDays) +
+    Number(holidayDays);
 
   const overtimeMinutes = useMemo(() => {
     const requests = data?.tables?.overtime_requests ?? [];
@@ -90,8 +94,8 @@ export default function SalaryCalculationDetailsView({
     if (!Array.isArray(requests) || requests.length === 0) {
       return parseMoneyValue(
         data?.attendance_details?.approved_overtime_minutes ??
-          data?.overtime_minutes ??
-          data?.approved_overtime_minutes
+        data?.overtime_minutes ??
+        data?.approved_overtime_minutes
       );
     }
 
@@ -113,8 +117,8 @@ export default function SalaryCalculationDetailsView({
 
   const overtimeAmount = parseMoneyValue(
     data?.additions_breakdown?.overtime_payout ??
-      additions?.overtime_payout ??
-      data?.overtime_amount
+    additions?.overtime_payout ??
+    data?.overtime_amount
   );
 
   const attendanceRows = useMemo(
@@ -452,6 +456,14 @@ export default function SalaryCalculationDetailsView({
             t('salaries.salaryCalculationModal.details.to'),
           ],
           ...leaveRows.map((row) => [row.day, row.from, row.to]),
+          [],
+          [
+            t('salaries.salaryCalculationModal.details.totalHours', {
+              defaultValue: 'Total Hours',
+            }),
+            formatHours(approvedLeavesTotalHours),
+            '',
+          ],
         ],
       },
       {
@@ -523,81 +535,81 @@ export default function SalaryCalculationDetailsView({
     return getManualExportTables();
   };
 
-const handleExportExcel = async () => {
-  try {
-    const XLSXModule = await import('xlsx');
-    const XLSX = XLSXModule.default || XLSXModule;
+  const handleExportExcel = async () => {
+    try {
+      const XLSXModule = await import('xlsx');
+      const XLSX = XLSXModule.default || XLSXModule;
 
-    const workbook = XLSX.utils.book_new();
-    const exportTables = getManualExportTables();
+      const workbook = XLSX.utils.book_new();
+      const exportTables = getManualExportTables();
 
-    const allRows = [];
+      const allRows = [];
 
-    exportTables.forEach((table) => {
-      allRows.push([table.title]);
-      allRows.push([]);
+      exportTables.forEach((table) => {
+        allRows.push([table.title]);
+        allRows.push([]);
 
-      table.rows.forEach((row) => {
-        allRows.push(row);
+        table.rows.forEach((row) => {
+          allRows.push(row);
+        });
+
+        allRows.push([]);
+        allRows.push([]);
       });
 
-      allRows.push([]);
-      allRows.push([]);
-    });
+      const worksheet = XLSX.utils.aoa_to_sheet(allRows);
 
-    const worksheet = XLSX.utils.aoa_to_sheet(allRows);
-
-    const maxColumns = allRows.reduce(
-      (max, row) => Math.max(max, row.length),
-      0
-    );
-
-    worksheet['!cols'] = Array.from({
-      length: Math.max(maxColumns, 1),
-    }).map(() => ({
-      wch: 24,
-    }));
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      isArabic ? 'كل الجداول' : 'All Tables'
-    );
-
-    exportTables.forEach((table, index) => {
-      const rows = table.rows?.length ? table.rows : [['--']];
-      const sheet = XLSX.utils.aoa_to_sheet(rows);
-
-      const sheetMaxColumns = rows.reduce(
+      const maxColumns = allRows.reduce(
         (max, row) => Math.max(max, row.length),
         0
       );
 
-      sheet['!cols'] = Array.from({
-        length: Math.max(sheetMaxColumns, 1),
+      worksheet['!cols'] = Array.from({
+        length: Math.max(maxColumns, 1),
       }).map(() => ({
         wch: 24,
       }));
 
       XLSX.utils.book_append_sheet(
         workbook,
-        sheet,
-        safeSheetName(table.title, index, new Set(workbook.SheetNames))
+        worksheet,
+        isArabic ? 'كل الجداول' : 'All Tables'
       );
-    });
 
-    const fileName = `salary-calculation-details-${safeFilePart(
-      employeeName
-    )}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      exportTables.forEach((table, index) => {
+        const rows = table.rows?.length ? table.rows : [['--']];
+        const sheet = XLSX.utils.aoa_to_sheet(rows);
 
-    XLSX.writeFile(workbook, fileName, {
-      bookType: 'xlsx',
-      type: 'binary',
-    });
-  } catch (error) {
-    console.error('Excel export failed:', error);
-  }
-};
+        const sheetMaxColumns = rows.reduce(
+          (max, row) => Math.max(max, row.length),
+          0
+        );
+
+        sheet['!cols'] = Array.from({
+          length: Math.max(sheetMaxColumns, 1),
+        }).map(() => ({
+          wch: 24,
+        }));
+
+        XLSX.utils.book_append_sheet(
+          workbook,
+          sheet,
+          safeSheetName(table.title, index, new Set(workbook.SheetNames))
+        );
+      });
+
+      const fileName = `salary-calculation-details-${safeFilePart(
+        employeeName
+      )}-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      XLSX.writeFile(workbook, fileName, {
+        bookType: 'xlsx',
+        type: 'binary',
+      });
+    } catch (error) {
+      console.error('Excel export failed:', error);
+    }
+  };
 
   const handleExportPdf = async () => {
     const jsPDFModule = await import('jspdf');
@@ -789,8 +801,8 @@ const handleExportExcel = async () => {
           <div class="export-page">
             <div class="export-header">
               <h1 class="export-title">${escapeHtml(
-                t('salaries.salaryCalculationModal.details.title')
-              )}</h1>
+      t('salaries.salaryCalculationModal.details.title')
+    )}</h1>
               <p class="export-subtitle">${escapeHtml(employeeName)}</p>
             </div>
 
@@ -996,29 +1008,40 @@ const handleExportExcel = async () => {
             </div>
           </CalcCard>
 
-          <CalcCard title={t('salaries.salaryCalculationModal.details.leaves')}>
-            <div className="max-h-64 overflow-y-auto">
-              <CalcDataTable
-                columns={[
-                  {
-                    key: 'day',
-                    label: t('salaries.salaryCalculationModal.details.day'),
-                  },
-                  {
-                    key: 'from',
-                    label: t('salaries.salaryCalculationModal.details.from'),
-                  },
-                  {
-                    key: 'to',
-                    label: t('salaries.salaryCalculationModal.details.to'),
-                  },
-                ]}
-                rows={leaveRows}
-                emptyMessage={t('salaries.emptyStates.noApprovedLeavesFound')}
-                valueClassName="text-slate-500"
-              />
-            </div>
-          </CalcCard>
+            <CalcCard
+              title={t('salaries.salaryCalculationModal.details.leaves')}
+              footer={
+                <CalcCardFooter
+                  variant="blue"
+                  label={t('salaries.salaryCalculationModal.details.totalHours', {
+                    defaultValue: 'Total Hours',
+                  })}
+                  value={formatHours(approvedLeavesTotalHours)}
+                />
+              }
+            >
+              <div className="max-h-64 overflow-y-auto">
+                <CalcDataTable
+                  columns={[
+                    {
+                      key: 'day',
+                      label: t('salaries.salaryCalculationModal.details.day'),
+                    },
+                    {
+                      key: 'from',
+                      label: t('salaries.salaryCalculationModal.details.from'),
+                    },
+                    {
+                      key: 'to',
+                      label: t('salaries.salaryCalculationModal.details.to'),
+                    },
+                  ]}
+                  rows={leaveRows}
+                  emptyMessage={t('salaries.emptyStates.noApprovedLeavesFound')}
+                  valueClassName="text-slate-500"
+                />
+              </div>
+            </CalcCard>
         </div>
       </div>
     </div>

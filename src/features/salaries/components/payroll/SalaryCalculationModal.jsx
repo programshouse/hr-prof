@@ -197,25 +197,25 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
 
   const sheetData = payrollPayload
     ? {
-        ...data,
-        ...payrollPayload,
-        attendance_rows: attendanceRowsFromSummary,
+      ...data,
+      ...payrollPayload,
+      attendance_rows: attendanceRowsFromSummary,
+      annualIncreaseDate,
+      header: {
+        ...(data?.header || {}),
+        ...(payrollPayload?.header || {}),
         annualIncreaseDate,
-        header: {
-          ...(data?.header || {}),
-          ...(payrollPayload?.header || {}),
-          annualIncreaseDate,
-        },
-      }
+      },
+    }
     : {
-        ...data,
-        attendance_rows: attendanceRowsFromSummary,
+      ...data,
+      attendance_rows: attendanceRowsFromSummary,
+      annualIncreaseDate,
+      header: {
+        ...(data?.header || {}),
         annualIncreaseDate,
-        header: {
-          ...(data?.header || {}),
-          annualIncreaseDate,
-        },
-      };
+      },
+    };
 
   const penaltiesRows = penaltiesResponse?.data?.rows ?? sheetData?.tables?.penalties ?? [];
 
@@ -275,6 +275,7 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
   });
 
   const employee = data?.employee || {};
+  const payrollEmployee = payrollPayload?.employee || {};
   const header = data?.header || {};
 
   const employeeDetailsData =
@@ -288,8 +289,8 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
 
   const employeeMasterRow = Array.isArray(employeeMasterRows)
     ? employeeMasterRows.find(
-        (row) => String(row?.id ?? row?.employee_id) === String(employee?.id)
-      ) || null
+      (row) => String(row?.id ?? row?.employee_id) === String(employee?.id)
+    ) || null
     : null;
 
   const applicantData =
@@ -339,30 +340,30 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
 
   const employeePosition = getDisplayValue(
     employee?.position ??
-      employee?.position_name ??
-      employeeDetailsData?.position ??
-      employeeDetailsData?.position_name ??
-      applicantData?.position ??
-      data?.position
+    employee?.position_name ??
+    employeeDetailsData?.position ??
+    employeeDetailsData?.position_name ??
+    applicantData?.position ??
+    data?.position
   );
 
   const employeeDepartment = getDisplayValue(
     employee?.department ??
-      employee?.department_name ??
-      employee?.department?.name ??
-      employee?.job?.department ??
-      employee?.work_info?.department ??
-      employeeDetailsData?.department ??
-      employeeDetailsData?.department_name ??
-      employeeDetailsData?.department?.name ??
-      employeeDetailsData?.job?.department ??
-      employeeDetailsData?.work_info?.department ??
-      applicantData?.department ??
-      applicantData?.department_name ??
-      applicantData?.department?.name ??
-      data?.department ??
-      data?.department_name ??
-      data?.department?.name
+    employee?.department_name ??
+    employee?.department?.name ??
+    employee?.job?.department ??
+    employee?.work_info?.department ??
+    employeeDetailsData?.department ??
+    employeeDetailsData?.department_name ??
+    employeeDetailsData?.department?.name ??
+    employeeDetailsData?.job?.department ??
+    employeeDetailsData?.work_info?.department ??
+    applicantData?.department ??
+    applicantData?.department_name ??
+    applicantData?.department?.name ??
+    data?.department ??
+    data?.department_name ??
+    data?.department?.name
   );
 
   const employeeShiftSource =
@@ -386,10 +387,65 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
   const employeeShiftRaw =
     typeof employeeShiftSource === 'object' && employeeShiftSource !== null
       ? ((isArabic
-          ? (employeeShiftSource?.name_ar ?? employeeShiftSource?.name_en)
-          : (employeeShiftSource?.name_en ?? employeeShiftSource?.name_ar)) ??
+        ? (employeeShiftSource?.name_ar ?? employeeShiftSource?.name_en)
+        : (employeeShiftSource?.name_en ?? employeeShiftSource?.name_ar)) ??
         getDisplayValue(employeeShiftSource))
       : getDisplayValue(employeeShiftSource);
+
+  const employeeBranchSource =
+    employee?.branch ??
+    employee?.branch_name ??
+    employee?.work_info?.branch ??
+    payrollEmployee?.branch ??
+    payrollEmployee?.branch_name ??
+    employeeDetailsData?.branch ??
+    employeeDetailsData?.branch_name ??
+    employeeDetailsData?.work_info?.branch ??
+    employeeMasterRow?.branch ??
+    employeeMasterRow?.branch_name ??
+    employeeMasterRow?.work_info?.branch ??
+    applicantData?.branch ??
+    applicantData?.branch_name ??
+    data?.branch ??
+    data?.branch_name;
+
+  const employeeBranch =
+    typeof employeeBranchSource === 'object' && employeeBranchSource !== null
+      ? ((isArabic
+        ? (employeeBranchSource?.name_ar ?? employeeBranchSource?.name_en)
+        : (employeeBranchSource?.name_en ?? employeeBranchSource?.name_ar)) ??
+        getDisplayValue(employeeBranchSource))
+      : getDisplayValue(employeeBranchSource);
+
+  const commissionPercentageRaw =
+    employee?.commission_percentage ??
+    payrollEmployee?.commission_percentage ??
+    employeeDetailsData?.commission_percentage ??
+    employeeDetailsData?.salary?.commission_percentage ??
+    employeeMasterRow?.commission_percentage ??
+    applicantData?.commission_percentage ??
+    data?.commission_percentage;
+
+  const employeeCommissionPercentage = (() => {
+    if (
+      commissionPercentageRaw === null ||
+      commissionPercentageRaw === undefined ||
+      commissionPercentageRaw === ''
+    ) {
+      return '';
+    }
+
+    const numeric = Number(String(commissionPercentageRaw).replace(/[^\d.-]/g, ''));
+    if (!Number.isNaN(numeric)) {
+      return `${numeric.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}%`;
+    }
+
+    const text = String(commissionPercentageRaw).trim();
+    return text.endsWith('%') ? text : `${text}%`;
+  })();
 
   const employeeTypeRaw =
     employee?.employment_type ??
@@ -402,8 +458,8 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
 
   const employmentTypeId = Number(
     employee?.employment_type_id ??
-      employeeDetailsData?.employment_type_id ??
-      data?.employment_type_id
+    employeeDetailsData?.employment_type_id ??
+    data?.employment_type_id
   );
 
   const employeeTypeNormalized = normalizeWorkMode(employeeTypeRaw);
@@ -426,28 +482,28 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
   const configuredMonthlyHours =
     Number(
       employee?.monthly_hours_required ??
-        employeeDetailsData?.monthly_hours_required ??
-        data?.monthly_hours_required ??
-        data?.required_monthly_hours ??
-        header?.required_monthly_hours ??
-        0
+      employeeDetailsData?.monthly_hours_required ??
+      data?.monthly_hours_required ??
+      data?.required_monthly_hours ??
+      header?.required_monthly_hours ??
+      0
     ) || 0;
 
   const workDays = parseScheduleArray(
     employee?.workDays ??
-      employee?.work_days ??
-      employeeDetailsData?.workDays ??
-      employeeDetailsData?.work_days ??
-      employeeDetailsData?.work_info?.work_days ??
-      data?.workDays ??
-      data?.work_days
+    employee?.work_days ??
+    employeeDetailsData?.workDays ??
+    employeeDetailsData?.work_days ??
+    employeeDetailsData?.work_info?.work_days ??
+    data?.workDays ??
+    data?.work_days
   );
 
   const weeklyWorkDays = parseScheduleArray(
     employee?.weekly_work_days ??
-      employeeDetailsData?.weekly_work_days ??
-      employeeDetailsData?.work_info?.weekly_work_days ??
-      data?.weekly_work_days
+    employeeDetailsData?.weekly_work_days ??
+    employeeDetailsData?.work_info?.weekly_work_days ??
+    data?.weekly_work_days
   );
 
   const getScheduleDayName = (item) =>
@@ -620,14 +676,14 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
     !isPartTimeEmployee &&
     (((employmentTypeId === 3 || employeeTypeNormalized === 'freelancer') &&
       (partTimeTypeNormalized === 'hours' || configuredMonthlyHours > 0)) ||
-    ['hourly', 'freelance_hours', 'freelancer_hours'].includes(employeeTypeNormalized) ||
-    employeeShiftNormalized.includes('freelance_hours') ||
-    employeeShiftNormalized.includes('freelancer_hours') ||
-    employeeShiftText.includes('freelancer (h)') ||
-    employeeShiftText.includes('freelancer (hours)') ||
-    (employeeShiftText.includes('freelancer') && employeeShiftText.includes('hour')) ||
-    (employeeShiftText.includes('ساعات') &&
-      (employeeShiftText.includes('مستقل') || employeeShiftText.includes('حر'))));
+      ['hourly', 'freelance_hours', 'freelancer_hours'].includes(employeeTypeNormalized) ||
+      employeeShiftNormalized.includes('freelance_hours') ||
+      employeeShiftNormalized.includes('freelancer_hours') ||
+      employeeShiftText.includes('freelancer (h)') ||
+      employeeShiftText.includes('freelancer (hours)') ||
+      (employeeShiftText.includes('freelancer') && employeeShiftText.includes('hour')) ||
+      (employeeShiftText.includes('ساعات') &&
+        (employeeShiftText.includes('مستقل') || employeeShiftText.includes('حر'))));
 
   const isFreelanceTasksMode =
     !isFreelanceHours &&
@@ -658,20 +714,20 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
 
   const employeeShiftDisplay = isFreelanceTasksMode
     ? t('salaries.salaryCalculationModal.freelanceTasks', {
-        defaultValue: 'Freelancer (Tasks)',
-      })
+      defaultValue: 'Freelancer (Tasks)',
+    })
     : isFreelanceHours
       ? t('salaries.salaryCalculationModal.freelanceHours', {
-          defaultValue: 'Freelancer (Hours)',
-        })
+        defaultValue: 'Freelancer (Hours)',
+      })
       : isPartTimeShift
         ? t('salaries.salaryCalculationModal.partTime', {
-            defaultValue: 'Part Time',
-          })
+          defaultValue: 'Part Time',
+        })
         : isFullTimeShift
           ? t('salaries.salaryCalculationModal.fullTime', {
-              defaultValue: 'Full Time',
-            })
+            defaultValue: 'Full Time',
+          })
           : employeeShiftRaw || humanizeWorkMode(employeeTypeNormalized);
 
   const absence_attendance = data?.absence_attendance || {
@@ -705,39 +761,39 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
 
   const shiftDetailItems = isFreelanceTasksMode
     ? [
-        {
-          label: t('salaries.salaryCalculationModal.tasks', {
-            defaultValue: 'Tasks',
-          }),
-          value: freelanceTasksCount,
-        },
-      ]
+      {
+        label: t('salaries.salaryCalculationModal.tasks', {
+          defaultValue: 'Tasks',
+        }),
+        value: freelanceTasksCount,
+      },
+    ]
     : isFullTimeShift
       ? []
       : isFreelanceHours
         ? [
-            {
-              label: t('salaries.salaryCalculationModal.items.requiredHours', {
-                defaultValue: 'Required Hours',
-              }),
-              value: formatValueWithUnitSuffix(t, requiredFreelanceHours, 'hour'),
-            },
-          ]
+          {
+            label: t('salaries.salaryCalculationModal.items.requiredHours', {
+              defaultValue: 'Required Hours',
+            }),
+            value: formatValueWithUnitSuffix(t, requiredFreelanceHours, 'hour'),
+          },
+        ]
         : isPartTimeShift
           ? [
-              {
-                label: t('salaries.salaryCalculationModal.days', {
-                  defaultValue: 'Days',
-                }),
-                value: partTimeDaysDisplay,
-              },
-              {
-                label: t('salaries.salaryCalculationModal.hours', {
-                  defaultValue: 'Hours',
-                }),
-                value: partTimeHoursValue,
-              },
-            ]
+            {
+              label: t('salaries.salaryCalculationModal.days', {
+                defaultValue: 'Days',
+              }),
+              value: partTimeDaysDisplay,
+            },
+            {
+              label: t('salaries.salaryCalculationModal.hours', {
+                defaultValue: 'Hours',
+              }),
+              value: partTimeHoursValue,
+            },
+          ]
           : [];
 
   const basic_salary =
@@ -750,10 +806,10 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
     data?.kpi && typeof data.kpi === 'object'
       ? data.kpi
       : {
-          payout: data?.kpi_payout ?? 0,
-          target: data?.kpi_target ?? 0,
-          percentage: data?.kpi ?? data?.kpi_percentage ?? 0,
-        };
+        payout: data?.kpi_payout ?? 0,
+        target: data?.kpi_target ?? 0,
+        percentage: data?.kpi ?? data?.kpi_percentage ?? 0,
+      };
 
   const kpiTarget = parseMoneyValue(kpi?.target);
 
@@ -763,11 +819,11 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
   // KPI percentage comes directly from data.kpi.achieved_percent_human.
   const kpiPercentage = parseMoneyValue(
     kpi?.achieved_percent ??
-      data?.kpi_achieved_percent ??
-      data?.kpi_percentage ??
-      data?.kpi_percent ??
-      data?.kpiPercentage ??
-      0
+    data?.kpi_achieved_percent ??
+    data?.kpi_percentage ??
+    data?.kpi_percent ??
+    data?.kpiPercentage ??
+    0
   );
 
   const kpiPercentageHuman =
@@ -821,8 +877,8 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
   const totalLateDeduction =
     parseMoneyValue(
       deductions_breakdown?.late_deduction ??
-        deductionsData?.late_deduction ??
-        deductionsData?.data?.late_deduction
+      deductionsData?.late_deduction ??
+      deductionsData?.data?.late_deduction
     ) || 0;
 
   const allowancesTotal =
@@ -1052,9 +1108,9 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
       console.error('Copy image failed:', error);
       toast.error(
         error?.message ||
-          t('salaries.salaryCalculationModal.messages.imageCopyFailed', {
-            defaultValue: 'Could not copy image.',
-          })
+        t('salaries.salaryCalculationModal.messages.imageCopyFailed', {
+          defaultValue: 'Could not copy image.',
+        })
       );
     }
   };
@@ -1128,64 +1184,67 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
     },
     {
       label: t('salaries.salaryCalculationModal.items.commission'),
-      value: data?.additions_breakdown?.commission_total ?? additions_breakdown?.commission_total,
+      value: employeeCommissionPercentage
+        ? `${employeeCommissionPercentage} (${formatApiDisplayValue(data?.additions_breakdown?.commission_total ?? additions_breakdown?.commission_total)})`
+        : (data?.additions_breakdown?.commission_total ?? additions_breakdown?.commission_total),
       color: 'text-emerald-600',
+      ...(employeeCommissionPercentage ? { isText: true } : {}),
       sectionKey: 'commission',
     },
     ...(showFreelanceHours
       ? [
-          {
-            label: t('salaries.salaryCalculationModal.items.requiredHours', {
-              defaultValue: 'Required Hours',
-            }),
-            value: requiredFreelanceHours,
-            color: 'text-slate-900',
-            unit: 'hour',
-          },
-          {
-            label: t('salaries.salaryCalculationModal.items.workedHours', {
-              defaultValue: 'Worked Hours',
-            }),
-            value: workedFreelanceHours,
-            color: 'text-emerald-600',
-            unit: 'hour',
-          },
-        ]
+        {
+          label: t('salaries.salaryCalculationModal.items.requiredHours', {
+            defaultValue: 'Required Hours',
+          }),
+          value: requiredFreelanceHours,
+          color: 'text-slate-900',
+          unit: 'hour',
+        },
+        {
+          label: t('salaries.salaryCalculationModal.items.workedHours', {
+            defaultValue: 'Worked Hours',
+          }),
+          value: workedFreelanceHours,
+          color: 'text-emerald-600',
+          unit: 'hour',
+        },
+      ]
       : []),
     ...(showFreelanceTasks
       ? [
-          {
-            label: t('salaries.salaryCalculationModal.items.freelanceTasks', {
-              defaultValue: 'Freelance Tasks',
-            }),
-            value:
-              data?.additions_breakdown?.freelance_tasks_total ??
-              additions_breakdown?.freelance_tasks_total,
+        {
+          label: t('salaries.salaryCalculationModal.items.freelanceTasks', {
+            defaultValue: 'Freelance Tasks',
+          }),
+          value:
+            data?.additions_breakdown?.freelance_tasks_total ??
+            additions_breakdown?.freelance_tasks_total,
+          color: 'text-emerald-600',
+          count: freelanceTasksCount,
+          countLabel:
+            freelanceTasksCount === 1
+              ? t('salaries.salaryCalculationModal.task', {
+                defaultValue: 'task',
+              })
+              : t('salaries.salaryCalculationModal.tasks', {
+                defaultValue: 'tasks',
+              }),
+          sectionKey: 'freelanceTasks',
+          children: freelanceTasks.map((task, taskIndex) => ({
+            id: task?.id ?? taskIndex,
+            label:
+              task?.task_name ??
+              task?.name ??
+              t('salaries.salaryCalculationModal.taskNumber', {
+                defaultValue: `Task ${taskIndex + 1}`,
+              }),
+            value: task?.cost ?? task?.amount ?? 0,
             color: 'text-emerald-600',
-            count: freelanceTasksCount,
-            countLabel:
-              freelanceTasksCount === 1
-                ? t('salaries.salaryCalculationModal.task', {
-                    defaultValue: 'task',
-                  })
-                : t('salaries.salaryCalculationModal.tasks', {
-                    defaultValue: 'tasks',
-                  }),
             sectionKey: 'freelanceTasks',
-            children: freelanceTasks.map((task, taskIndex) => ({
-              id: task?.id ?? taskIndex,
-              label:
-                task?.task_name ??
-                task?.name ??
-                t('salaries.salaryCalculationModal.taskNumber', {
-                  defaultValue: `Task ${taskIndex + 1}`,
-                }),
-              value: task?.cost ?? task?.amount ?? 0,
-              color: 'text-emerald-600',
-              sectionKey: 'freelanceTasks',
-            })),
-          },
-        ]
+          })),
+        },
+      ]
       : []),
     {
       label: t('salaries.salaryCalculationModal.items.allowances'),
@@ -1195,6 +1254,18 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
         allowancesTotal,
       color: 'text-emerald-600',
       sectionKey: 'allowances',
+    },
+    {
+      label: t('salaries.salaryCalculationModal.items.totalPositive', {
+        defaultValue: 'Total Positive',
+      }),
+      value:
+        header?.total_positive ??
+        payrollPayload?.header?.total_positive ??
+        data?.total_positive ??
+        0,
+      color: 'text-emerald-600',
+      sectionKey: 'overview',
     },
     {
       label: isArabic ? 'الإجازات السنوية' : 'Annual Leaves',
@@ -1329,6 +1400,12 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
         }),
         value: employeeShiftDisplay || '--',
       },
+      {
+        label: t('salaries.salaryCalculationModal.branch', {
+          defaultValue: 'Branch',
+        }),
+        value: employeeBranch || '--',
+      },
       ...shiftDetailItems.map((detail) => ({
         label: detail.label,
         value: String(detail.value ?? '--'),
@@ -1448,9 +1525,9 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
 
     return Boolean(
       element.matches?.('table, [role="table"]') ||
-        element.querySelector?.(
-          'table, [role="table"], thead, tbody, [role="rowgroup"], [role="row"]'
-        )
+      element.querySelector?.(
+        'table, [role="table"], thead, tbody, [role="rowgroup"], [role="row"]'
+      )
     );
   };
 
@@ -1627,20 +1704,20 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
       const handleClick = navigable ? () => handleGoToSection(sectionKey) : undefined;
       const handleKeyDown = navigable
         ? (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleGoToSection(sectionKey);
-            }
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleGoToSection(sectionKey);
           }
+        }
         : undefined;
 
       return (
         <div
-       
-        
+
+
           onClick={handleClick}
           onKeyDown={handleKeyDown}
-          
+
         >
           {children}
         </div>
@@ -1782,16 +1859,14 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
           role={clickable ? 'button' : undefined}
           tabIndex={clickable ? 0 : undefined}
           title={clickable ? `Go to ${item.label}` : undefined}
-          className={`flex min-h-[37px] items-center justify-between border-b border-slate-200 py-1 ${
-            clickable
-              ? 'focus-visible:ring-primary/40 cursor-pointer rounded-md px-2 transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:outline-none'
-              : ''
-          }`}
+          className={`flex min-h-[37px] items-center justify-between border-b border-slate-200 py-1 ${clickable
+            ? 'focus-visible:ring-primary/40 cursor-pointer rounded-md px-2 transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:outline-none'
+            : ''
+            }`}
         >
           <span
-            className={`text-[16px] font-semibold ${
-              clickable ? 'text-primary underline' : 'text-slate-500'
-            }`}
+            className={`text-[16px] font-semibold ${clickable ? 'text-primary underline' : 'text-slate-500'
+              }`}
           >
             {item.label}
           </span>
@@ -2064,36 +2139,48 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
 
             {view === 'summary' && (
               <div className="mt-3 space-y-2">
-                {(employeePosition || employeeDepartment || employeeShiftDisplay) && (
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500">
-                    {employeePosition && (
-                      <span>
-                        {t('salaries.exportColumns.position', {
-                          defaultValue: 'Position',
-                        })}
-                        : <strong className="text-slate-700">{employeePosition}</strong>
-                      </span>
-                    )}
+                {(employeePosition ||
+                  employeeDepartment ||
+                  employeeShiftDisplay ||
+                  employeeBranch) && (
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500">
+                      {employeePosition && (
+                        <span>
+                          {t('salaries.exportColumns.position', {
+                            defaultValue: 'Position',
+                          })}
+                          : <strong className="text-slate-700">{employeePosition}</strong>
+                        </span>
+                      )}
 
-                    {employeeDepartment && (
-                      <span>
-                        {t('salaries.exportColumns.department', {
-                          defaultValue: 'Department',
-                        })}
-                        : <strong className="text-slate-700">{employeeDepartment}</strong>
-                      </span>
-                    )}
+                      {employeeDepartment && (
+                        <span>
+                          {t('salaries.exportColumns.department', {
+                            defaultValue: 'Department',
+                          })}
+                          : <strong className="text-slate-700">{employeeDepartment}</strong>
+                        </span>
+                      )}
 
-                    {employeeShiftDisplay && (
-                      <span>
-                        {t('salaries.salaryCalculationModal.shift', {
-                          defaultValue: 'Shift',
-                        })}
-                        : <strong className="text-slate-700">{employeeShiftDisplay}</strong>
-                      </span>
-                    )}
-                  </div>
-                )}
+                      {employeeShiftDisplay && (
+                        <span>
+                          {t('salaries.salaryCalculationModal.shift', {
+                            defaultValue: 'Shift',
+                          })}
+                          : <strong className="text-slate-700">{employeeShiftDisplay}</strong>
+                        </span>
+                      )}
+
+                      {employeeBranch && (
+                        <span>
+                          {t('salaries.salaryCalculationModal.branch', {
+                            defaultValue: 'Branch',
+                          })}
+                          : <strong className="text-slate-700">{employeeBranch}</strong>
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                 {findSalarySection('overview') ? (
                   <button

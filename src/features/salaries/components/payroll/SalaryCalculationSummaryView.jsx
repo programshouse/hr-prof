@@ -19,7 +19,6 @@ export default function SalaryCalculationSummaryView({ data, penaltiesRows = [],
   const additions = data?.additions_breakdown ?? {};
   const deductions = data?.deductions_breakdown ?? {};
   const absence = data?.absence_attendance ?? {};
-  const holidays = absence?.Holidays ?? absence?.holidays ?? {};
 
   const basicSalary =
     parseMoneyValue(data?.basic_salary) ||
@@ -65,33 +64,6 @@ const kpiPercentage =
   const sickDays =
     absence?.sick_days ?? data?.sick_days ?? data?.deductions_breakdown?.sick_days ?? 0;
 
-  const presentDays =
-    absence?.attendance?.days ?? absence?.attendance_days ?? absence?.attendance ?? 0;
-
-  const absentDays = absence?.absence?.total ?? absence?.absence_total ?? 0;
-  const annualLeaveDays =
-    holidays?.used_days_in_month ?? absence?.annual_leave_days ?? 0;
-  const unpaidLeaveDays = absence?.absence?.unpaid ?? absence?.absence_unpaid ?? 0;
-  const holidayDays = holidays?.holiday_days ?? absence?.holiday_days ?? 0;
-
-  const overtimeMinutes = useMemo(() => {
-    const requests = data?.tables?.overtime_requests ?? [];
-    if (!Array.isArray(requests) || requests.length === 0) {
-      return parseMoneyValue(data?.attendance_details?.approved_overtime_minutes ?? data?.overtime_minutes ?? data?.approved_overtime_minutes);
-    }
-    return requests.reduce(
-      (sum, row) => sum + Number(row?.minutes ?? row?.duration_minutes ?? 0),
-      0
-    );
-  }, [data]);
-
-  const overtimeHours = (overtimeMinutes / 60).toFixed(
-    Number(overtimeMinutes) % 60 === 0 ? 0 : 1
-  );
-
-  const overtimeRate = data?.attendance_details?.overtime_multiplier ?? data?.overtime_rate ?? header?.overtime_multiplier ?? '--';
-  const overtimeAmount = parseMoneyValue(additions?.overtime_payout ?? data?.overtime_amount);
-
   const totalEarning =
     basicSalary + kpiPayout + rewardsTotal + commissionTotal + freelanceTotal;
 
@@ -120,7 +92,6 @@ const kpiPercentage =
   }, [rewardsRows, data]);
 
   const formatDays = (count) => formatValueWithUnitSuffix(t, count, 'day');
-  const formatHours = (count) => formatValueWithUnitSuffix(t, count, 'hour');
 
   const penaltyTableRows = useMemo(() => {
     const rows = penaltiesRows.length > 0 ? penaltiesRows : (data?.tables?.deductions || data?.tables?.penalties || []);
@@ -201,57 +172,6 @@ const kpiPercentage =
       item: t('salaries.salaryCalculationModal.summary.sickDeduction'),
       details: formatDays(sickDays),
       amount: displayAmount(sickDeduction, true),
-    },
-  ];
-
-  const attendanceRows = [
-    {
-      id: 'present',
-      item: t('salaries.salaryCalculationModal.summary.presentDays'),
-      days: formatDays(presentDays),
-    },
-    {
-      id: 'absent',
-      item: t('salaries.salaryCalculationModal.summary.absentDays'),
-      days: formatDays(absentDays),
-    },
-    {
-      id: 'sick',
-      item: t('salaries.salaryCalculationModal.summary.sickDays'),
-      days: formatDays(sickDays),
-    },
-    {
-      id: 'annual',
-      item: t('salaries.salaryCalculationModal.summary.annualLeave'),
-      days: formatDays(annualLeaveDays),
-    },
-    {
-      id: 'unpaid',
-      item: t('salaries.salaryCalculationModal.summary.unpaidLeave'),
-      days: formatDays(unpaidLeaveDays),
-    },
-    {
-      id: 'holidays',
-      item: t('salaries.salaryCalculationModal.summary.holidays'),
-      days: formatDays(holidayDays),
-    },
-  ];
-
-  const overtimeRows = [
-    {
-      id: 'hours',
-      item: t('salaries.salaryCalculationModal.summary.overtimeHours'),
-      details: formatHours(overtimeHours),
-    },
-    {
-      id: 'rate',
-      item: t('salaries.salaryCalculationModal.summary.overtimeRate'),
-      details: overtimeRate,
-    },
-    {
-      id: 'amount',
-      item: t('salaries.salaryCalculationModal.summary.overtimeAmount'),
-      details: displayAmount(overtimeAmount, true),
     },
   ];
 
@@ -400,53 +320,6 @@ const kpiPercentage =
               emptyMessage={t('salaries.salaryCalculationModal.summary.noRecordsFound')}
             />
           </div>
-        </CalcCard>
-
-        <CalcCard
-          title={t('salaries.salaryCalculationModal.summary.attendance')}
-        >
-          <CalcDataTable
-            columns={[
-              {
-                key: 'item',
-                label: t('salaries.salaryCalculationModal.summary.item'),
-              },
-              {
-                key: 'days',
-                label: t('salaries.salaryCalculationModal.summary.days'),
-                align: 'end',
-              },
-            ]}
-            rows={attendanceRows}
-            emptyMessage={emptyMsg}
-          />
-        </CalcCard>
-
-        <CalcCard
-          title={t('salaries.salaryCalculationModal.summary.overtimeDetails')}
-          footer={
-            <CalcCardFooter
-              variant="yellow"
-              label={t('salaries.salaryCalculationModal.details.totalOvertime')}
-              value={`${currency} ${formatMoney(overtimeAmount)}`}
-            />
-          }
-        >
-          <CalcDataTable
-            columns={[
-              {
-                key: 'item',
-                label: t('salaries.salaryCalculationModal.summary.item'),
-              },
-              {
-                key: 'details',
-                label: t('salaries.salaryCalculationModal.summary.details'),
-                align: 'end',
-              },
-            ]}
-            rows={overtimeRows}
-            emptyMessage={t('salaries.emptyStates.noOvertimeRequestsFound')}
-          />
         </CalcCard>
       </div>
     </div>
