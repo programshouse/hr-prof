@@ -117,7 +117,7 @@ export default function EmployeeSalaryPage() {
     [searchParams]
   );
 
-  const { data: salaryListData } = useQuery({
+  const { data: salaryListData, isLoading: isSalaryListLoading } = useQuery({
     queryKey: ['salariesTable', year, month, listPage, listPageSize, listFilters],
     queryFn: () =>
       salariesApi.getSalariesTable({
@@ -130,55 +130,99 @@ export default function EmployeeSalaryPage() {
     enabled: !!year && !!month,
   });
 
-  const salaryListRows = salaryListData?.data ?? [];
-  const salaryListTotalPages = Math.max(1, Number(salaryListData?.pagination?.pages ?? 1) || 1);
+  const filteredRows = salaryListData?.data ?? [];
+  const filteredTotalPages = Math.max(1, Number(salaryListData?.pagination?.pages ?? 1) || 1);
+  const filteredIndex = filteredRows.findIndex((row) => String(row.id) === String(employeeId));
+  const hasFilteredMultiNav =
+    filteredIndex >= 0 && (filteredRows.length > 1 || filteredTotalPages > 1);
 
-  const currentListIndex = salaryListRows.findIndex(
-    (row) => String(row.id) === String(employeeId)
+  const shouldLoadFallbackList = Boolean(
+    year && month && !isSalaryListLoading && !hasFilteredMultiNav
   );
 
+  const { data: fallbackSalaryListData } = useQuery({
+    queryKey: ['salariesTableFallback', year, month],
+    queryFn: () =>
+      salariesApi.getSalariesTable({
+        year,
+        month,
+        page: 1,
+        pageSize: 500,
+      }),
+    enabled: shouldLoadFallbackList,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const fallbackRows = fallbackSalaryListData?.data ?? [];
+  const fallbackTotalPages = Math.max(
+    1,
+    Number(fallbackSalaryListData?.pagination?.pages ?? 1) || 1
+  );
+  const fallbackIndex = fallbackRows.findIndex((row) => String(row.id) === String(employeeId));
+  const useFallbackList = !hasFilteredMultiNav && fallbackIndex >= 0;
+
+  const salaryListRows = useFallbackList ? fallbackRows : filteredRows;
+  const activeListPage = useFallbackList ? 1 : listPage;
+  const activeListPageSize = useFallbackList ? 500 : listPageSize;
+  const salaryListTotalPages = useFallbackList ? fallbackTotalPages : filteredTotalPages;
+  const salaryListTotalCount = Number(
+    (useFallbackList
+      ? fallbackSalaryListData?.pagination?.total
+      : salaryListData?.pagination?.total) ?? salaryListRows.length
+  );
+
+  const currentListIndex = useFallbackList ? fallbackIndex : filteredIndex;
+
   const isInSalaryList = currentListIndex >= 0 && salaryListRows.length > 0;
-  const canGoPreviousEmployee = isInSalaryList && (currentListIndex > 0 || listPage > 1);
+  const canGoPreviousEmployee = isInSalaryList && (currentListIndex > 0 || activeListPage > 1);
   const canGoNextEmployee =
     isInSalaryList &&
-    (currentListIndex < salaryListRows.length - 1 || listPage < salaryListTotalPages);
+    (currentListIndex < salaryListRows.length - 1 || activeListPage < salaryListTotalPages);
+
+  const companyIdParam = searchParams.get('company_id');
 
   const buildEmployeeUrl = (targetEmployeeId, nextListPage) => {
     const params = new URLSearchParams();
     params.set('year', String(year));
     params.set('month', String(month));
+    if (companyIdParam) params.set('company_id', String(companyIdParam));
     params.set('return_page', String(nextListPage));
-    params.set('return_pageSize', String(listPageSize));
+    params.set('return_pageSize', String(activeListPageSize));
 
-    if (listFilters.search) params.set('search', listFilters.search);
-    if (listFilters.shift_id && listFilters.shift_id !== 'all') {
-      params.set('shift_id', String(listFilters.shift_id));
-    }
-    if (listFilters.position_id && listFilters.position_id !== 'all') {
-      params.set('position_id', String(listFilters.position_id));
-    }
-    if (listFilters.department_id && listFilters.department_id !== 'all') {
-      params.set('department_id', String(listFilters.department_id));
-    }
-    if (listFilters.branch_id && listFilters.branch_id !== 'all') {
-      params.set('branch_id', String(listFilters.branch_id));
+    if (!useFallbackList) {
+      if (listFilters.search) params.set('search', listFilters.search);
+      if (listFilters.shift_id && listFilters.shift_id !== 'all') {
+        params.set('shift_id', String(listFilters.shift_id));
+      }
+      if (listFilters.position_id && listFilters.position_id !== 'all') {
+        params.set('position_id', String(listFilters.position_id));
+      }
+      if (listFilters.department_id && listFilters.department_id !== 'all') {
+        params.set('department_id', String(listFilters.department_id));
+      }
+      if (listFilters.branch_id && listFilters.branch_id !== 'all') {
+        params.set('branch_id', String(listFilters.branch_id));
+      }
     }
 
     return `/salaries/${targetEmployeeId}?${params.toString()}`;
   };
 
-  const fetchSalaryListPage = (page) =>
-    queryClient.fetchQuery({
-      queryKey: ['salariesTable', year, month, page, listPageSize, listFilters],
+  const fetchSalaryListPage = (page) => {
+    const filtersForPage = useFallbackList ? {} : listFilters;
+
+    return queryClient.fetchQuery({
+      queryKey: ['salariesTable', year, month, page, activeListPageSize, filtersForPage],
       queryFn: () =>
         salariesApi.getSalariesTable({
           year,
           month,
           page,
-          pageSize: listPageSize,
-          ...listFilters,
+          pageSize: activeListPageSize,
+          ...filtersForPage,
         }),
     });
+  };
 
   const handleFirstEmployee = async () => {
     const data = await fetchSalaryListPage(1);
@@ -200,15 +244,15 @@ export default function EmployeeSalaryPage() {
     if (currentListIndex > 0) {
       const prev = salaryListRows[currentListIndex - 1];
       if (!prev?.id) return;
-      navigate(buildEmployeeUrl(prev.id, listPage), { replace: true });
+      navigate(buildEmployeeUrl(prev.id, activeListPage), { replace: true });
       return;
     }
 
-    if (listPage > 1) {
-      const data = await fetchSalaryListPage(listPage - 1);
+    if (activeListPage > 1) {
+      const data = await fetchSalaryListPage(activeListPage - 1);
       const last = data?.data?.[data?.data?.length - 1];
       if (!last?.id) return;
-      navigate(buildEmployeeUrl(last.id, listPage - 1), { replace: true });
+      navigate(buildEmployeeUrl(last.id, activeListPage - 1), { replace: true });
     }
   };
 
@@ -218,15 +262,15 @@ export default function EmployeeSalaryPage() {
     if (currentListIndex < salaryListRows.length - 1) {
       const next = salaryListRows[currentListIndex + 1];
       if (!next?.id) return;
-      navigate(buildEmployeeUrl(next.id, listPage), { replace: true });
+      navigate(buildEmployeeUrl(next.id, activeListPage), { replace: true });
       return;
     }
 
-    if (listPage < salaryListTotalPages) {
-      const data = await fetchSalaryListPage(listPage + 1);
+    if (activeListPage < salaryListTotalPages) {
+      const data = await fetchSalaryListPage(activeListPage + 1);
       const first = data?.data?.[0];
       if (!first?.id) return;
-      navigate(buildEmployeeUrl(first.id, listPage + 1), { replace: true });
+      navigate(buildEmployeeUrl(first.id, activeListPage + 1), { replace: true });
     }
   };
 
@@ -735,10 +779,10 @@ export default function EmployeeSalaryPage() {
         onPrint={handlePrint}
         onUpdate={refreshPayroll}
         employeeNav={
-          isInSalaryList && (salaryListRows.length > 1 || salaryListTotalPages > 1)
+          isInSalaryList
             ? {
-                index: currentListIndex,
-                total: salaryListRows.length,
+                index: (activeListPage - 1) * activeListPageSize + currentListIndex,
+                total: salaryListTotalCount,
                 canGoPrevious: canGoPreviousEmployee,
                 canGoNext: canGoNextEmployee,
                 onFirst: handleFirstEmployee,
