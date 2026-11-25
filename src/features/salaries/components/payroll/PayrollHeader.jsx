@@ -7,7 +7,8 @@ import {
   Eye,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePayrollStore } from '@/stores/usePayrollStore';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { buildAvatarUrl } from '@/lib/utils/avatarUtils';
@@ -55,6 +56,29 @@ export function PayrollHeader({
   const isRTL = i18n.language?.startsWith('ar');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const modalNavigationOpen = usePayrollStore((state) => state.salaryModalNavigationOpen);
+  const setModalNavigationOpen = usePayrollStore((state) => state.setSalaryModalNavigationOpen);
+
+  // Shared state preserves the open salary modal when navigating to a different
+  // employee route, including across salary-list page boundaries.
+  useEffect(() => {
+    if (modalNavigationOpen && payrollData?.employee?.id &&
+        String(payrollData.employee.id) === String(employee?.id)) {
+      setIsModalOpen(true);
+    }
+  }, [modalNavigationOpen, payrollData?.employee?.id, employee?.id]);
+
+  const handleModalOpenChange = (nextOpen) => {
+    setIsModalOpen(nextOpen);
+    if (!nextOpen) setModalNavigationOpen(false);
+  };
+
+  const navigateInModal = (direction) => {
+    const handler = direction === 'previous' ? employeeNav?.onPrevious : employeeNav?.onNext;
+    if (!handler) return;
+    setModalNavigationOpen(true);
+    handler();
+  };
 
   const iconMargin = isRTL ? 'ml-2' : 'mr-2';
   const isEmployeeActive = getEmployeeActiveStatus(employee?.is_active);
@@ -254,7 +278,7 @@ export function PayrollHeader({
 
             <Button
               variant="default"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => { setModalNavigationOpen(true); setIsModalOpen(true); }}
               className="w-full sm:w-auto"
             >
               <Eye className={`${iconMargin} h-4 w-4`} />
@@ -267,7 +291,12 @@ export function PayrollHeader({
 
       <SalaryCalculationModal
         open={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        onOpenChange={handleModalOpenChange}
+        employeeNav={employeeNav ? {
+          ...employeeNav,
+          onPrevious: () => navigateInModal('previous'),
+          onNext: () => navigateInModal('next'),
+        } : null}
         data={payrollData}
         onUpdate={onUpdate}
       />

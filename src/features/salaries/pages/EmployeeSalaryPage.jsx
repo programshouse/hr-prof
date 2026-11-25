@@ -735,7 +735,7 @@ export default function EmployeeSalaryPage() {
         onPrint={handlePrint}
         onUpdate={refreshPayroll}
         employeeNav={
-          isInSalaryList && salaryListRows.length > 1
+          isInSalaryList && (salaryListRows.length > 1 || salaryListTotalPages > 1)
             ? {
                 index: currentListIndex,
                 total: salaryListRows.length,

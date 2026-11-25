@@ -9,6 +9,8 @@ import {
   Download,
   Eye,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { usePayrollStore } from '@/stores/usePayrollStore';
 import { useQuery } from '@tanstack/react-query';
@@ -99,7 +101,7 @@ const parseScheduleArray = (value) => {
   return [];
 };
 
-export default function SalaryCalculationModal({ open, onOpenChange, data: propData, onUpdate }) {
+export default function SalaryCalculationModal({ open, onOpenChange, data: propData, onUpdate, employeeNav }) {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
   const navigate = useNavigate();
@@ -1886,47 +1888,6 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
             {neutralItems.map(renderSalaryItem)}
           </div>
         )}
-
-        {findSalarySection('overview') ? (
-          <button
-            type="button"
-            onClick={() => handleGoToSection('overview')}
-            className="focus-visible:ring-primary/40 mt-1 flex w-full items-center gap-4 rounded-lg bg-[#F3F2FF] px-5 py-2 text-start transition-colors hover:bg-[#ebe9ff] focus-visible:ring-2 focus-visible:outline-none"
-            title={t('salaries.salaryCalculationModal.goToOverview', {
-              defaultValue: 'Go to Overview',
-            })}
-          >
-            <div className="bg-primary flex size-10 items-center justify-center rounded-md">
-              <Wallet className="h-6 w-6 text-white" />
-            </div>
-
-            <div>
-              <p className="text-primary text-xl leading-tight font-bold">
-                {t('salaries.salaryCalculationModal.totalSalary')}
-              </p>
-
-              <p className="text-2xl font-bold tracking-tight text-slate-900">
-                {formatApiDisplayValue(netSalaryDisplay)}
-              </p>
-            </div>
-          </button>
-        ) : (
-          <div className="mt-1 flex w-full items-center gap-4 rounded-lg bg-[#F3F2FF] px-5 py-2">
-            <div className="bg-primary flex size-10 items-center justify-center rounded-md">
-              <Wallet className="h-6 w-6 text-white" />
-            </div>
-
-            <div>
-              <p className="text-primary text-xl leading-tight font-bold">
-                {t('salaries.salaryCalculationModal.totalSalary')}
-              </p>
-
-              <p className="text-2xl font-bold tracking-tight text-slate-900">
-                {formatApiDisplayValue(netSalaryDisplay)}
-              </p>
-            </div>
-          </div>
-        )}
       </div>
     );
   };
@@ -2037,34 +1998,53 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
                           {employeeCode}
                         </span>
                       )}
-                    </div>
 
-                    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium text-slate-500">
-                      {employeePosition && (
-                        <span>
-                          {t('salaries.exportColumns.position', {
-                            defaultValue: 'Position',
-                          })}
-                          : <strong className="text-slate-700">{employeePosition}</strong>
-                        </span>
-                      )}
-
-                      {employeeDepartment && (
-                        <span>
-                          {t('salaries.exportColumns.department', {
-                            defaultValue: 'Department',
-                          })}
-                          : <strong className="text-slate-700">{employeeDepartment}</strong>
-                        </span>
-                      )}
-
-                      {employeeShiftDisplay && (
-                        <span>
-                          {t('salaries.salaryCalculationModal.shift', {
-                            defaultValue: 'Shift',
-                          })}
-                          : <strong className="text-slate-700">{employeeShiftDisplay}</strong>
-                        </span>
+                      {employeeNav && (employeeNav.canGoPrevious || employeeNav.canGoNext) && (
+                        <div
+                          className="flex shrink-0 items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 px-1 py-0.5"
+                          data-exclude-from-image="true"
+                        >
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="!h-7 !w-7"
+                            onClick={employeeNav.onPrevious}
+                            disabled={!employeeNav.canGoPrevious || employeeNav.isNavigating}
+                            title={t('common.previous', { defaultValue: 'Previous employee' })}
+                            aria-label="Previous employee"
+                          >
+                            {isArabic ? (
+                              <ChevronRight className="h-4 w-4" />
+                            ) : (
+                              <ChevronLeft className="h-4 w-4" />
+                            )}
+                          </Button>
+                          {employeeNav.index !== undefined && employeeNav.total > 0 && (
+                            <span
+                              className="min-w-[42px] text-center text-xs font-semibold text-slate-600"
+                              dir="ltr"
+                            >
+                              {employeeNav.index + 1} / {employeeNav.total}
+                            </span>
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="!h-7 !w-7"
+                            onClick={employeeNav.onNext}
+                            disabled={!employeeNav.canGoNext || employeeNav.isNavigating}
+                            title={t('common.next', { defaultValue: 'Next employee' })}
+                            aria-label="Next employee"
+                          >
+                            {isArabic ? (
+                              <ChevronLeft className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -2081,6 +2061,82 @@ export default function SalaryCalculationModal({ open, onOpenChange, data: propD
                 </div>
               </div>
             </DialogHeader>
+
+            {view === 'summary' && (
+              <div className="mt-3 space-y-2">
+                {(employeePosition || employeeDepartment || employeeShiftDisplay) && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500">
+                    {employeePosition && (
+                      <span>
+                        {t('salaries.exportColumns.position', {
+                          defaultValue: 'Position',
+                        })}
+                        : <strong className="text-slate-700">{employeePosition}</strong>
+                      </span>
+                    )}
+
+                    {employeeDepartment && (
+                      <span>
+                        {t('salaries.exportColumns.department', {
+                          defaultValue: 'Department',
+                        })}
+                        : <strong className="text-slate-700">{employeeDepartment}</strong>
+                      </span>
+                    )}
+
+                    {employeeShiftDisplay && (
+                      <span>
+                        {t('salaries.salaryCalculationModal.shift', {
+                          defaultValue: 'Shift',
+                        })}
+                        : <strong className="text-slate-700">{employeeShiftDisplay}</strong>
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {findSalarySection('overview') ? (
+                  <button
+                    type="button"
+                    onClick={() => handleGoToSection('overview')}
+                    className="focus-visible:ring-primary/40 flex w-full items-center gap-4 rounded-lg bg-[#F3F2FF] px-5 py-2 text-start transition-colors hover:bg-[#ebe9ff] focus-visible:ring-2 focus-visible:outline-none"
+                    title={t('salaries.salaryCalculationModal.goToOverview', {
+                      defaultValue: 'Go to Overview',
+                    })}
+                  >
+                    <div className="bg-primary flex size-10 items-center justify-center rounded-md">
+                      <Wallet className="h-6 w-6 text-white" />
+                    </div>
+
+                    <div>
+                      <p className="text-primary text-xl leading-tight font-bold">
+                        {t('salaries.salaryCalculationModal.totalSalary')}
+                      </p>
+
+                      <p className="text-2xl font-bold tracking-tight text-slate-900">
+                        {formatApiDisplayValue(netSalaryDisplay)}
+                      </p>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="flex w-full items-center gap-4 rounded-lg bg-[#F3F2FF] px-5 py-2">
+                    <div className="bg-primary flex size-10 items-center justify-center rounded-md">
+                      <Wallet className="h-6 w-6 text-white" />
+                    </div>
+
+                    <div>
+                      <p className="text-primary text-xl leading-tight font-bold">
+                        {t('salaries.salaryCalculationModal.totalSalary')}
+                      </p>
+
+                      <p className="text-2xl font-bold tracking-tight text-slate-900">
+                        {formatApiDisplayValue(netSalaryDisplay)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {view === 'details' ? (
               <SalaryCalculationDetailsView

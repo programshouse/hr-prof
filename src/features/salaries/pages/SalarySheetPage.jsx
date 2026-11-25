@@ -591,6 +591,50 @@ export default function SalarySheetPage() {
   const canGoPrevious = currentEmployeeIndex > 0;
   const canGoNext = currentEmployeeIndex < allEmployees.length - 1;
 
+  // Use the currently visible salary-sheet order, with the current filters.
+  // Fetch adjacent pages when navigation crosses a pagination boundary.
+  const [salaryModalNavigating, setSalaryModalNavigating] = useState(false);
+  const salaryModalRowIndex = rows.findIndex(
+    (row) => String(row.id) === String(salaryModalState.row?.id)
+  );
+  const salaryModalNav = {
+    index: (currentPage - 1) * pageSize + Math.max(0, salaryModalRowIndex),
+    total: Number(pagination.total ?? rows.length),
+    canGoPrevious: !salaryModalNavigating && (salaryModalRowIndex > 0 || currentPage > 1),
+    canGoNext: !salaryModalNavigating &&
+      (salaryModalRowIndex >= 0 && salaryModalRowIndex < rows.length - 1 || currentPage < lastPage),
+    isNavigating: salaryModalNavigating,
+  };
+
+  const changeSalaryModalEmployee = async (direction) => {
+    if (salaryModalNavigating || !salaryModalState.row) return;
+    const step = direction === 'next' ? 1 : -1;
+    const index = rows.findIndex((row) => String(row.id) === String(salaryModalState.row.id));
+    if (index < 0) return;
+    if (rows[index + step]) {
+      setSalaryModalState((prev) => ({ ...prev, row: rows[index + step] }));
+      return;
+    }
+    const targetPage = currentPage + step;
+    if (targetPage < 1 || targetPage > lastPage) return;
+    setSalaryModalNavigating(true);
+    try {
+      const response = await salariesApi.getSalarySheet({
+        year, month, page: targetPage, pageSize, ...filters,
+      });
+      const nextRows = response?.data ?? [];
+      const targetRow = step > 0 ? nextRows[0] : nextRows[nextRows.length - 1];
+      if (targetRow) {
+        setCurrentPage(targetPage);
+        setSalaryModalState((prev) => ({ ...prev, row: targetRow }));
+      }
+    } catch (error) {
+      toast.error(t('salaries.sheet.messages.failedToLoad', { defaultValue: 'Could not load employee salary.' }));
+    } finally {
+      setSalaryModalNavigating(false);
+    }
+  };
+
   const buildSalaryCalculationData = (row) => ({
     ...row,
     employee: {
@@ -1332,6 +1376,11 @@ export default function SalarySheetPage() {
             open,
           }))
         }
+        employeeNav={{
+          ...salaryModalNav,
+          onPrevious: () => changeSalaryModalEmployee('previous'),
+          onNext: () => changeSalaryModalEmployee('next'),
+        }}
         data={salaryModalState.row ? buildSalaryCalculationData(salaryModalState.row) : null}
       />
 
