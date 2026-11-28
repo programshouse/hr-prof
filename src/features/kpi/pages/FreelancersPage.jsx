@@ -1,3 +1,4 @@
+import ProfSyncButton from '../components/ProfSyncButton';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
@@ -59,6 +60,7 @@ export default function FreelancersPage() {
   );
 
   const [workedHoursMap, setWorkedHoursMap] = useState({});
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const queryParams = useMemo(
     () => ({
@@ -288,13 +290,19 @@ export default function FreelancersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex flex-wrap items-center gap-4">
         <MonthNavigation
           date={date}
           onDateChange={handleDateChange}
         />
 
-        <div className="mt-6 flex items-start gap-3" />
+        <ProfSyncButton
+          type="hours"
+          year={year}
+          month={month}
+          disabled={addWorkedHoursMutation.isPending}
+          onBusyChange={setIsSyncing}
+        />
       </div>
 
       <div className="w-full max-w-xs">
@@ -468,6 +476,7 @@ export default function FreelancersPage() {
             onClick={handleSave}
             disabled={
               addWorkedHoursMutation.isPending ||
+              isSyncing ||
               isBusy
             }
             className="h-12 w-full max-w-xs rounded-lg"

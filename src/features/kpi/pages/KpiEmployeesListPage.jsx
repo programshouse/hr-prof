@@ -1,3 +1,4 @@
+import ProfSyncButton from '../components/ProfSyncButton';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -147,6 +148,9 @@ export default function KpiEmployeesListPage() {
   return (
     <div className="space-y-6">
       <MonthNavigation date={date} onDateChange={handleDateChange} />
+      <div className="flex justify-end">
+        <ProfSyncButton type="kpi" year={year} month={month} disabled={isResetting} />
+      </div>
 
       {isHeaderError ? (
         <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
